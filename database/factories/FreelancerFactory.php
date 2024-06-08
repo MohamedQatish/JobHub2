@@ -22,7 +22,7 @@ class FreelancerFactory extends Factory
             'description' => $this->faker->paragraph,
             'hourly_wage' => $this->faker->randomFloat(2, 10, 40),
             //'residence' => $this->faker->city,
-            // 'country_id' => mt_rand(1,243),
+            'country_id' => mt_rand(1, 243),
             'gender' => $this->faker->randomElement(['male', 'female']),
             'total_jobs' => $this->faker->numberBetween(0, 50),
             'total_hours' => $this->faker->numberBetween(0, 3000),

@@ -17,11 +17,12 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('title')->nullable();
-            $table->string('company_name')->nullable();
             $table->enum('company_size', ['small', 'medium', 'large'])->nullable();
             $table->string('website')->nullable();
             $table->string('location')->nullable();
+            $table->foreignId('country_id')->nullable()->constrained('countries')->cascadeOnDelete();
             $table->text('description')->nullable();
+            $table->unsignedInteger('followers')->default(0);
             // $table->string('logo')->nullable();
             $table->decimal('rating')->nullable();
             $table->dateTime('verified_at')->nullable();

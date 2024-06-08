@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCompanyRequest extends FormRequest
+class RatingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,9 @@ class StoreCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:30',
-            'company_size' => 'required|in:small,medium,large',
-            'website' => 'required|url|max:255',
-            'location' => 'required|string|max:255',
-            'description' => 'required|string',
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'country_id' => 'required|exists:countries,id'
+            'company_id' => 'required|exists:companies,id',
+            'freelancer_id' => 'required|exists:freelancers,id',
+            'rating' => 'required|integer|min:1|max:5'
         ];
     }
 }

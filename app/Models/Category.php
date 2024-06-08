@@ -18,7 +18,10 @@ class Category extends Model
     public function favoriedBy(){
         return $this->belongsToMany(Freelancer::class,'freelancer_favorite_categories');
     }
-
+    public function companyJobs()
+    {
+        return $this->hasMany(CompanyJob::class);
+    }
     public function jobs(){
         return $this->hasMany(Job::class);
     }

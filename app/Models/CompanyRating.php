@@ -5,18 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class FreelancerRating extends Model
+class CompanyRating extends Model
 {
     use HasFactory;
-    protected $guarded = [];
-
-
-    public function freelancer()
+    protected $guarded=[];
+    public function freelancers()
     {
-        return $this->belongsTo(Freelancer::class);
+    return $this->belongsTo(Freelancer::class);
     }
-
-    public function company()
+    public function companies()
     {
         return $this->belongsTo(Company::class);
     }

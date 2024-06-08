@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Company extends Model
 {
-    use HasFactory,HasApiTokens;
+    use HasFactory, HasApiTokens;
 
     protected $guard = 'company';
     protected $guarded = [];
@@ -20,15 +20,37 @@ class Company extends Model
         return $this->hasMany(Chat::class, 'created_by');
     }
 
-    public function routeNotificationForOneSignal() : array{
-        return ['tags'=>['key'=>'userId','relation'=>'=', 'value'=>(string)($this->id)]];
+    public function routeNotificationForOneSignal(): array
+    {
+        return ['tags' => ['key' => 'userId', 'relation' => '=', 'value' => (string)($this->id)]];
+    }
+
+    public function jobs()
+    {
+        return $this->hasMany(companyjob::class, 'owner_id');
     }
 
     // public function sendNewMessageNotification(array $data) : void {
     //     $this->notify(new MessageSent($data));
     // }
-    public function photo(){
-        return $this->morphOne(Photo::class,'photable');
+    public function photo()
+    {
+        return $this->morphOne(Photo::class, 'photable');
     }
-
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+    public function rating()
+    {
+        return $this->hasMany(CompanyRating::class);
+    }
+    public function ratings()
+    {
+        return $this->hasMany(CompanyRating::class);
+    }
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating');
+    }
 }
