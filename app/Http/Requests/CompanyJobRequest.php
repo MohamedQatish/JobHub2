@@ -22,8 +22,8 @@ class CompanyJobRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'title' => 'required|string|max:255|min:5',
+            'description' => 'required|string|min:20',
             'vacancies' => 'required|integer|min:1',
             'scope' => 'required|in:small,medium,large',
             'work_schedule' => 'required|in:Full-time,Part-time',
@@ -31,7 +31,8 @@ class CompanyJobRequest extends FormRequest
             'hourly_rate_min' => 'required_if:price_type,hourly|numeric|min:0',
             'hourly_rate_max' => 'required_if:price_type,hourly|numeric|min:0|gte:hourly_rate_min',
             'fixed_rate' => 'required_if:price_type,fixed|numeric|min:0',
-            'category_id'=>'required|exists:categories,id',
+            'category_id' => 'required|exists:categories,id',
+            'duration' => 'required|in :less than 1 month,1 to 3 months,3 to 6 months,more than 6 months',
             'skills' => 'required|array',
             'skills.*' => 'exists:skills,id',
         ];

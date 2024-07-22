@@ -22,36 +22,36 @@ class JobController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-{
-    $freelancer = Auth::user();
-    $filter = new JobFilter();
-    $latest = $request->query('latest');
-    $byRating = $request->query('byRating');
-    $filteredItems = $filter->transform($request);
-    $categories = $freelancer->favoriteCategories->pluck('category_id');
+    {
+        $freelancer = Auth::user();
+        $filter = new JobFilter();
+        $latest = $request->query('latest');
+        $byRating = $request->query('byRating');
+        $filteredItems = $filter->transform($request);
+        $categories = $freelancer->favoriteCategories->pluck('category_id');
 
-    $jobsQuery = Job::whereIn('category_id', $categories)->with('owner')->with('skills');
-    
-    foreach ($filteredItems as $condition) {
-        $jobsQuery->where(...$condition);
+        $jobsQuery = Job::whereIn('category_id', $categories)->with('owner')->with('skills');
+
+        foreach ($filteredItems as $condition) {
+            $jobsQuery->where(...$condition);
+        }
+
+        if ($byRating) {
+            $jobsQuery->join('freelancers', 'jobs.owner_id', '=', 'freelancers.id')
+                ->orderBy('freelancers.rating', 'desc');
+        }
+
+        if ($latest) {
+            $jobsQuery->orderBy('created_at', 'desc');
+        }
+
+        $jobs = $jobsQuery->paginate(10)->appends($request->query());
+        return response()->json([
+            'jobs' => new JobCollection($jobs)
+        ]);
     }
-    
-    if ($byRating) {
-        $jobsQuery->join('freelancers', 'jobs.owner_id', '=', 'freelancers.id')
-                  ->orderBy('freelancers.rating', 'desc');
-    }
 
-    if ($latest) {
-        $jobsQuery->orderBy('created_at', 'desc');
-    }
-
-    $jobs = $jobsQuery->paginate(20)->appends($request->query());
-    return response()->json([
-        'jobs' => new JobCollection($jobs)
-    ]);
-}
-
-        // public function index(Request $request)
+    // public function index(Request $request)
     // {
     //     $filter= new customerFilter();
     //     $filterItems= $filter->transform($request);
@@ -69,7 +69,7 @@ class JobController extends Controller
      */
     public function store(StoreJobRequest $request)
     {
-        try{
+        try {
             $freelancer = Auth::user();
             // $freelancer = $request->user();
             // if(isNull($freelancer)){
@@ -81,10 +81,10 @@ class JobController extends Controller
             $skills = $validated['skills'];
             unset($validated['skills']);
             DB::beginTransaction();
-            $job = Job::create(array_merge($validated,['owner_id' => $freelancer->id]));
+            $job = Job::create(array_merge($validated, ['owner_id' => $freelancer->id]));
             // $job = Job::create($validated);
             //$job->save();
-            foreach($skills as $skill){
+            foreach ($skills as $skill) {
                 JobSkill::create([
                     'job_id' => $job->id,
                     'skill_id' => $skill['skill_id']
@@ -94,12 +94,12 @@ class JobController extends Controller
             return response()->json([
                 'job' => $job,
                 'message' => 'Your job has been successfully published.'
-            ]);            
-        }catch(\Exception $e){
+            ]);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
@@ -130,19 +130,20 @@ class JobController extends Controller
     //     }
     // }
 
-    public function jobApplications(Job $job){
-        try{
+    public function jobApplications(Job $job)
+    {
+        try {
             $applications = $job->applicants()->with('freelancer.photo')->get();
-            $freelancers = $applications->map(function($application){
+            $freelancers = $applications->map(function ($application) {
                 return $application->freelancer;
             });
             return response()->json([
                 new FreelancerCollection($freelancers)
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
@@ -151,7 +152,6 @@ class JobController extends Controller
      */
     public function show(Job $job)
     {
-        
     }
 
     /**

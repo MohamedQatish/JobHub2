@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Freelancer;
+use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -32,5 +33,15 @@ class FreelancerFactory extends Factory
             'created_at' => now(),
             'updated_at' => now(),
         ];
+    }
+    public function configure()
+    {
+        return $this->afterCreating(function (Freelancer $freelancer) {
+            Wallet::create([
+                'owner_id' => $freelancer->id,
+                'owner_type' => Freelancer::class,
+                'balance' => 500.00,
+            ]);
+        });
     }
 }

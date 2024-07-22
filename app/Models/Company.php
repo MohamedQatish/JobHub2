@@ -15,6 +15,13 @@ class Company extends Model
     protected $guard = 'company';
     protected $guarded = [];
 
+
+
+    public function isCompany()
+    {
+        return true;
+    }
+
     public function chats(): HasMany
     {
         return $this->hasMany(Chat::class, 'created_by');
@@ -49,8 +56,17 @@ class Company extends Model
     {
         return $this->hasMany(CompanyRating::class);
     }
-    public function averageRating()
+    public function followers()
     {
-        return $this->ratings()->avg('rating');
+        return $this->belongsToMany(Freelancer::class, 'company_freelancer', 'company_id', 'freelancer_id');
+    }
+    public function wallet()
+    {
+        return $this->morphOne(Wallet::class, 'owner');
+    }
+
+    public function contracts()
+    {
+        return $this->morphMany(Contract::class, 'employer');
     }
 }

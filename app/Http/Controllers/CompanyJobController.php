@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyJobRequest;
 use App\Models\CompanyJob;
+use App\Models\CompanyPostPackage;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,21 +12,43 @@ use Illuminate\Support\Facades\DB;
 
 class CompanyJobController extends Controller
 {
+    public function show($id)
+    {
+        try {
+            $job = CompanyJob::findOrFail($id);
+            return response()->json(['job' => $job], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' => 'Job not found', 'error' => $e->getMessage()], 404);
+        }
+    }
     public function create(CompanyJobRequest $request)
     {
         try {
             DB::beginTransaction();
-            $company = Auth::User();
+            $company = Auth::user();
+
+
+            $companyPackage = CompanyPostPackage::where('company_id', $company->id)
+                ->where('remaining_posts', '>', 0)
+                ->first();
+
+            if (!$companyPackage) {
+                return response()->json(['message' => 'No available post package. Please purchase a package.'], 403);
+            }
+
             $validated = $request->validated();
             $validated['owner_id'] = $company->id;
             $skills = $validated['skills'];
             unset($validated['skills']);
             $job = CompanyJob::create($validated);
             $job->skills()->attach($skills);
+
+            $companyPackage->decrement('remaining_posts');
+
             DB::commit();
             return response()->json(['message' => 'Job created successfully', 'job' => $job], 201);
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }

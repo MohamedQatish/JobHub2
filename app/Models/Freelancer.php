@@ -11,18 +11,18 @@ use Illuminate\Database\Eloquent\Model;
 class Freelancer extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
-    protected $guarded = []; 
+    protected $guarded = [];
     protected $guard = 'freelancer';
 
-    
+
     public function photo(){
         return $this->morphOne(Photo::class,'photable');
     }
-    
+
     public function cv(){
         return $this->hasOne(Cv::class);
     }
-    
+
     // public function skills(){
     //     return $this->hasMany(FreelancerSkill::class);
     // }
@@ -51,11 +51,26 @@ class Freelancer extends Authenticatable
         return $this->hasMany(JobApplicants::class);
     }
 
+    public function companyApplications(){
+        return $this->hasMany(CompanyJobApplicant::class);
+    }
     public function jobs(){
         return $this->hasMany(Job::class,'owner_id');
     }
 
     public function ratings(){
         return $this->hasMany(FreelancerRating::class);
+    }
+    public function followedCompanies()
+    {
+        return $this->belongsToMany(Company::class, 'freelancer_compane_followers', 'freelancer_id', 'company_id');
+    }
+    public function wallet()
+    {
+        return $this->morphOne(Wallet::class,'owner');
+    }
+    public function contracts()
+    {
+        return $this->morphMany(Contract::class,'employer');
     }
 }

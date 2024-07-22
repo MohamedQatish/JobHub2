@@ -21,9 +21,11 @@ return new class extends Migration
             $table->enum('scope',['small','medium','large'])->nullable();
             $table->enum('work_schedule', ['Full-time', 'Part-time'])->nullable();
             $table->enum('price_type',['hourly', 'fixed']);
+            $table->enum('duration',['less than 1 month','1 to 3 months','3 to 6 months','more than 6 months'])->nullable();
             $table->decimal('hourly_rate_min', 10, 2)->nullable();
             $table->decimal('hourly_rate_max', 10, 2)->nullable();
             $table->decimal('fixed_rate', 10, 2)->nullable();
+            $table->integer('applicants_count')->nullable()->default(0);
 
             $table->index('price_type');
             $table->index('scope');

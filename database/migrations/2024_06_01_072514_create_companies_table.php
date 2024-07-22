@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('email')->unique();
             $table->string('password');
-            $table->string('title')->nullable();
-            $table->enum('company_size', ['small', 'medium', 'large'])->nullable();
+            $table->string('company_name')->nullable();
+            $table->foreignId('specialization_id')->nullable()->constrained('specializations');
             $table->string('website')->nullable();
             $table->string('location')->nullable();
             $table->foreignId('country_id')->nullable()->constrained('countries')->cascadeOnDelete();

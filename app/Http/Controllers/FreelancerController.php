@@ -18,6 +18,7 @@ use App\Models\FreelancerSkill;
 use App\Models\Job;
 use App\Models\JobApplicants;
 use App\Models\Photo;
+use App\Models\Wallet;
 use App\Traits\UploadCvTrait;
 use App\Traits\UploadPhotoTrait;
 use App\Traits\VerificationTrait;
@@ -96,6 +97,11 @@ class FreelancerController extends Controller
             $freelancer = Freelancer::create($validated);
             $code = $this->sendCode($freelancer);
             $token = $freelancer->createToken('freelancer')->plainTextToken;
+            Wallet::create([
+                'owner_id' => $freelancer->id,
+                'owner_type' => Freelancer::class,
+                'balance' => 0.00,
+            ]);
             DB::commit();
             return response()->json([
                 'freelancer' => $freelancer,

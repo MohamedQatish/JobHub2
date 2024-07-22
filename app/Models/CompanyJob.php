@@ -17,7 +17,16 @@ class CompanyJob extends Model
     {
         return $this->belongsToMany(skill::class,'company_job_skills');
     }
-    public function category(){
+    public function category()
+    {
         return $this->belongsTo(Category::class);
+    }
+    public function applicant()
+    {
+        return $this->hasMany(CompanyJobApplicant::class);
+    }
+    public function contracts()
+    {
+        return $this->morphMany(Contract::class,'job');
     }
 }

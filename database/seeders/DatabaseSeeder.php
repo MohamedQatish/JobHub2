@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
+use App\Models\PostPackage;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -25,6 +26,10 @@ class DatabaseSeeder extends Seeder
             SkillSeeder::class,
             CountrySeeder::class,
             FreelancerSeeder::class,
+            PostPackageSeeder::class,
+            CompanySeeder::class,
+            CompanyJobSeeder::class,
+            CompanyJobSkillSeeder::class,
         ]);
     }
 }

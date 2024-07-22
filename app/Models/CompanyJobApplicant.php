@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JobApplicants extends Model
+class CompanyJobApplicant extends Model
 {
     use HasFactory;
-    protected $guarded = [];
-    public function job(){
-        return $this->belongsTo(Job::class);
+    protected $guarded=[];
+    public function companyJob()
+    {
+        return $this->belongsTo(CompanyJob::class);
     }
-    public function freelancer(){
+    public function freelancer()
+    {
         return $this->belongsTo(Freelancer::class);
     }
 }

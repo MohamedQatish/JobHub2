@@ -7,6 +7,9 @@ use App\Http\Requests\RegisterCompanyRequest;
 use App\Http\Requests\StoreCompanyRequest;
 use App\Models\Code;
 use App\Models\Company;
+use App\Models\Freelancer;
+use App\Models\freelancerCompaneFollower;
+use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +32,11 @@ class CompanyController extends Controller
             $company = Company::create($validated);
             $code = $this->sendCode($company);
             $token = $company->createToken('company')->plainTextToken;
+            Wallet::create([
+                'owner_id' => $company->id,
+                'owner_type' => Company::class,
+                'balance' => 500.00,
+            ]);
             DB::commit();
             return response()->json([
                 'company' => $company,
@@ -88,8 +96,8 @@ class CompanyController extends Controller
             $company = Auth::user();
             $validated = $request->validated();
             DB::beginTransaction();
-            if($request->hasFile('photo')){
-                $photo = $this->uploadPhoto($request,'photos',"companies");
+            if ($request->hasFile('photo')) {
+                $photo = $this->uploadPhoto($request, 'photos', "companies");
                 $company->photo()->create([
                     'name' => $photo
                 ]);
@@ -148,38 +156,39 @@ class CompanyController extends Controller
         }
     }
 
-    public function myJobs()
+
+
+    public function follow($companyId)
     {
-        try {
-            // $freelancer = Freelancer::where('id',1)->first();
-            $freelancer = Auth::user();
-            $jobs = $freelancer->jobs;
-            return response()->json([
-                'jobs' => $jobs
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 500);
+        $freelancer = Auth::user();
+        if (!$freelancer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
+
+        $company = Company::find($companyId);
+        if (!$company) {
+            return response()->json(['message' => 'Company not found'], 404);
+        }
+
+        $freelancer->followedCompanies()->syncWithoutDetaching([$company->id]);
+        $company->increment('followers');
+        return response()->json(['message' => 'Company followed successfully.']);
     }
 
-    public function myApplications()
+    public function unfollow($companyId)
     {
-        try {
-            $freelancer = Auth::user();
-            $applications = $freelancer->applications;
-            $jobs = [];
-            foreach ($applications as $application) {
-                $jobs[] = [$application->job];
-            }
-            return response()->json([
-                'applications' => $jobs
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => $e->getMessage()
-            ], 500);
+        $freelancer = Auth::user();
+        if (!$freelancer) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
+
+        $company = Company::find($companyId);
+        if (!$company) {
+            return response()->json(['message' => 'Company not found'], 404);
+        }
+
+        $freelancer->followedCompanies()->detach($company->id);
+        $company->decrement('followers');
+        return response()->json(['message' => 'Company unfollowed successfully.']);
     }
 }
