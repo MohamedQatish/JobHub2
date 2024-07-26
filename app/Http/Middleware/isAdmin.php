@@ -7,19 +7,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class isCompany
+class isAdmin
 {
     /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('company')->check()) {
-            return $next($request);
+        if(!Auth::guard('admin')->check()){
+            return response()->json([
+                'message' => 'unAuthorized'
+            ],403);
         }
-
-        return response()->json(['message' => 'Unauthorized'], 401);
+        return $next($request);
     }
 }

@@ -66,5 +66,7 @@ class Kernel extends HttpKernel
         'isFreelancer' => \App\Http\Middleware\isFreelancer::class,
         'isOwner' => \App\Http\Middleware\checkOwner::class,
         'isCompany' => \App\Http\Middleware\isCompany::class,
+        'isAdmin' => \App\Http\Middleware\isAdmin::class,
+        'isBanned' => \App\Http\Middleware\checkIfBanned::class,
     ];
 }

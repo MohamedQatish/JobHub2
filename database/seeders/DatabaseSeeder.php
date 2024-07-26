@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             SkillSeeder::class,
             CountrySeeder::class,
             FreelancerSeeder::class,
+            AdminSeeder::class,
             PostPackageSeeder::class,
             CompanySeeder::class,
             CompanyJobSeeder::class,

@@ -16,4 +16,18 @@ class JobCollection extends ResourceCollection
     {
         return parent::toArray($request);
     }
+    
+
+    // return [
+    //     'data' => JobResource::collection($this->collection),
+    //     'pagination' => [
+    //         'total' => $this->total(),
+    //         'count' => $this->count(),
+    //         'per_page' => $this->perPage(),
+    //         'current_page' => $this->currentPage(),
+    //         'total_pages' => $this->lastPage(),
+    //         'next_page_url' => $this->nextPageUrl(),
+    //         'prev_page_url' => $this->previousPageUrl(),
+    //     ],
+    // ];
 }

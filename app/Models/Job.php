@@ -23,6 +23,9 @@ class Job extends Model
     public function applicants(){
         return $this->hasMany(JobApplicants::class);
     }
+    public function reported(){
+        return $this->morphMany(Report::class,'reportable');
+    }
     public function contracts()
     {
         return $this->morphMany(Contract::class, 'job');

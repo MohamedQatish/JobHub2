@@ -56,6 +56,29 @@ class Company extends Model
     {
         return $this->hasMany(CompanyRating::class);
     }
+
+    public function ratingsGiven()
+    {
+        return $this->morphMany(Ratings::class, 'rater');
+    }
+
+    public function ratingsReceived()
+    {
+        return $this->morphMany(Ratings::class, 'rateable');
+    }
+
+    public function bans(){
+        return $this->morphMany(Ban::class,'bannable');
+    }
+
+    public function banned(){
+        return $this->morphOne(Ban::class,'bannable')->latest('banned_at');
+    }
+
+    public function reported(){
+        return $this->morphMany(Report::class,'reportable');
+    }
+    
     public function followers()
     {
         return $this->belongsToMany(Freelancer::class, 'company_freelancer', 'company_id', 'freelancer_id');

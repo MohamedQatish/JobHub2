@@ -9,6 +9,7 @@ use App\Models\Code;
 use App\Models\Company;
 use App\Models\Freelancer;
 use App\Models\freelancerCompaneFollower;
+use App\Models\Ratings;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -190,5 +191,63 @@ class CompanyController extends Controller
         $freelancer->followedCompanies()->detach($company->id);
         $company->decrement('followers');
         return response()->json(['message' => 'Company unfollowed successfully.']);
+    }
+
+
+    public function rate(Request $request,$id){
+        try{
+            $request->validate([
+                'rating'=>['required','digits_between:0,5'],
+                'comment' => ['string']
+            ]);
+
+            $user = Auth::user();
+
+            if ($request->routeIs('rate.freelancer2')) {
+                $rated = Freelancer::findOrFail($id);
+                if ($user instanceof Freelancer && $user->id == $rated->id) {
+                    return response()->json([
+                        'message' => 'You cannot rate yourself'
+                    ], 400);
+                }
+            } elseif ($request->routeIs('rate.company2')) {
+                $rated = Company::findOrFail($id);
+                if ($user instanceof Company && $user->id == $rated->id) {
+                    return response()->json([
+                        'message' => 'You cannot rate yourself'
+                    ], 400);
+                }
+            } else {
+                return response()->json(['message' => 'Invalid route'], 400);
+            }
+
+            DB::beginTransaction();
+
+            $oldRate = $rated->ratingsReceived()->where('rater_id',$user->id);
+            if(isset($oldRate)){
+                $oldRate->delete();
+            }
+            $rating = Ratings::create([
+                'rating' => $request->rating,
+                'comment' => $request->comment
+            ]);
+            $user->ratingsGiven()->save($rating);
+            $rated->ratingsReceived()->save($rating);
+
+            $ratings = $rated->ratingsReceived;
+            $totalRating = $ratings->sum('rating');
+            $averageRating = $ratings->count() > 0 ? $totalRating / $ratings->count() : 0;
+
+            $rated->update(['rating' => $averageRating]);
+            return response()->json([
+                'message' => 'you rated him successfully'
+            ],200);
+            DB::commit();
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ],500);
+        }
     }
 }

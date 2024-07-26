@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class isCompany
+class checkIfBanned
 {
     /**
      * Handle an incoming request.
@@ -16,10 +16,17 @@ class isCompany
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::guard('company')->check()) {
-            return $next($request);
-        }
+        $user = Auth::user();
+        if($user->banned){
+            if(now()->greaterThan($user->banned->ban_until)){
+                $user->banned->delete();
+            }else{
+                return response()->json([
+                    'message' => 'you are banned until: '.$user->banned->ban_until
 
-        return response()->json(['message' => 'Unauthorized'], 401);
+                ]);
+            }
+        }
+        return $next($request);
     }
 }

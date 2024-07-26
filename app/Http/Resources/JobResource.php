@@ -29,7 +29,7 @@ class JobResource extends JsonResource
             'payment' => $payment,
             'duration' => $this->duration,
             'skills' => $this->whenLoaded('skills', function () {
-                return $this->skills->pluck('skill')->pluck('name');
+                return $this->skills->pluck('name');
             }),
             'proposals' => $this->applicants_count,
             'posted at' => $createdAt

@@ -49,6 +49,10 @@ return [
         'company' => [
             'driver' => 'sanctum',
             'provider' => 'companies'
+        ],
+        'admin' => [
+            'driver' => 'sanctum',
+            'provider' => 'admins'
         ]
     ],
 
@@ -81,6 +85,10 @@ return [
         'companies' => [
             'driver' => 'eloquent',
             'model' => Company::class
+        ],
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => Admin::class
         ]
         // 'users' => [
         //     'driver' => 'database',

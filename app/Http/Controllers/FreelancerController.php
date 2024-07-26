@@ -7,6 +7,9 @@ use App\Http\Requests\RegisterFreelancerRequest;
 use App\Models\Freelancer;
 use App\Http\Requests\StoreFreelancerRequest;
 use App\Http\Requests\UpdateFreelancerRequest;
+use App\Http\Resources\FreelancerCollection;
+use App\Http\Resources\FreelancerProfileResource;
+use App\Http\Resources\FreelancerResource;
 use App\Mail\codeMail;
 use App\Mail\newApplicationMail;
 use App\Mail\WelcomeMail;
@@ -16,8 +19,11 @@ use App\Models\FreelancerFavoriteJobs;
 use App\Models\FreelancerRating;
 use App\Models\FreelancerSkill;
 use App\Models\Job;
+use App\Models\Company;
+use App\Models\CompanyJob;
 use App\Models\JobApplicants;
 use App\Models\Photo;
+use App\Models\Ratings;
 use App\Models\Wallet;
 use App\Traits\UploadCvTrait;
 use App\Traits\UploadPhotoTrait;
@@ -379,6 +385,98 @@ class FreelancerController extends Controller
         }
     }
 
+    public function report(Request $request,$id){
+        try{
+            $request->validate([
+                'reason' => 'required'
+            ]);
+            if($request->routeIs('report.freelancer')){
+                $reported = Freelancer::findOrFail($id);
+            }elseif($request->routeIs('report.company')){
+                $reported = Company::findOrFail($id);
+            }elseif($request->routeIs('report.job')){
+                $reported = Job::findOrFail($id);
+            }
+            elseif($request->routeIs('report.companyJob')){
+                $reported = CompanyJob::findOrFail($id);
+            }
+            $freelancer = Auth::user();
+            DB::beginTransaction();
+            $reported->reported()->create([
+                'reporter' => $freelancer->id,
+                'report_reason' => $request->reason
+            ]);
+            DB::commit();
+            return response()->json([
+                'message' => 'Report submitted successfully'
+            ],200);
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function rate(Request $request,$id){
+        try{
+            $request->validate([
+                'rating'=>['required','between:0,5'],
+                'comment' => ['string']
+            ]);
+
+            $user = Auth::user();
+
+            if ($request->routeIs('rate.freelancer')) {
+                $rated = Freelancer::findOrFail($id);
+                if ($user instanceof Freelancer && $user->id == $rated->id) {
+                    return response()->json([
+                        'message' => 'You cannot rate yourself'
+                    ], 400);
+                }
+            } elseif ($request->routeIs('rate.company')) {
+                $rated = Company::findOrFail($id);
+                if ($user instanceof Company && $user->id == $rated->id) {
+                    return response()->json([
+                        'message' => 'You cannot rate yourself'
+                    ], 400);
+                }
+            } else {
+                return response()->json(['message' => 'Invalid route'], 400);
+            }
+
+            DB::beginTransaction();
+
+            $oldRate = $rated->ratingsReceived()->where('rater_id',$user->id);
+            if(isset($oldRate)){
+                $oldRate->delete();
+            }
+            $rating = new Ratings([
+                'rating' => $request->rating,
+                'comment' => $request->comment
+            ]);
+            
+            $rating->rater()->associate($user);
+            $rating->rateable()->associate($rated);
+            $rating->save();
+
+            $ratings = $rated->ratingsReceived;
+            $totalRating = $ratings->sum('rating');
+            $averageRating = $ratings->count() > 0 ? $totalRating / $ratings->count() : 0;
+
+            $rated->update(['rating' => $averageRating]);
+            DB::commit();
+            return response()->json([
+                'message' => 'you rated him successfully'
+            ],200);
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ],500);
+        }
+    }
+
     // public function sendCode(){
     //     $freelancer = Freelancer::
     //     $code = mt_rand(100000,999999);
@@ -389,7 +487,16 @@ class FreelancerController extends Controller
 
     public function index()
     {
-        //
+        try{
+            $freelancers = Freelancer::whereNotNull('verified_at')->get();
+            return response()->json([
+                'freelancers'=> new FreelancerCollection($freelancers)
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'message'=>$e->getMessage()
+            ]);
+        }
     }
 
 
@@ -398,7 +505,16 @@ class FreelancerController extends Controller
      */
     public function show(Freelancer $freelancer)
     {
-        //
+        try{
+            $freelancer->load('photo', 'cv', 'skills', 'jobs', 'ratingsReceived');
+            return response()->json([
+                'freelancer' => new FreelancerProfileResource($freelancer)
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'message'=>$e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -412,9 +528,58 @@ class FreelancerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateFreelancerRequest $request, Freelancer $freelancer)
+    public function update(UpdateFreelancerRequest $request)
     {
-        //
+        try{
+            $freelancer = Auth::user();
+            $validated = $request->validated();
+            DB::beginTransaction();
+            if($request->hasFile('photo')){
+                $photo = $this->uploadPhoto($request,'photos','freelancers');
+                $freelancer->photo()->create([
+                    'name' => $photo
+                ]);
+                unset($validated['photo']);
+            }
+            if($request->hasFile('cv')){
+                $cv = $this->uploadCv($request,'cvs');
+                $freelancer->cv()->create([
+                    //'freelancer_id' => $freelancer->id,
+                    'name' => $cv
+                ]);
+                unset($validated['cv']);
+            }
+            if($request['skills']){
+                $skills = $validated['skills'];
+                unset($validated['skills']);
+                foreach($skills as $skill){
+                    FreelancerSkill::create([
+                        'freelancer_id' => $freelancer->id,
+                        'skill_id' => $skill['skill_id']
+                    ]);
+                }
+            }
+            if($request['favorite_categories']){
+                $favoriteCategories = $validated['favorite_categories'];
+                unset($validated['favorite_categories']);
+                foreach($favoriteCategories as $category){
+                    FreelancerFavoriteCategories::create([
+                        'freelancer_id' => $freelancer->id,
+                        'category_id' => $category['category_id']
+                    ]);
+                }
+            }
+            $freelancer->update($validated);
+            DB::commit();
+            return response()->json([
+                'message' => 'Your information has been successfully updated.'
+            ]);
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'message'=>$e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -422,6 +587,15 @@ class FreelancerController extends Controller
      */
     public function destroy(Freelancer $freelancer)
     {
-        //
+        try{
+            $freelancer->delete();
+            return response()->json([
+                'message' => 'the freelancer has been deleted successfully'
+            ],200);
+        }catch(\Exception $e){
+            return response()->json([
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }

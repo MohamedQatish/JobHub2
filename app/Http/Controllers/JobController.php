@@ -8,6 +8,7 @@ use App\Http\Requests\StoreJobRequest;
 use App\Http\Requests\UpdateJobRequest;
 use App\Http\Resources\FreelancerCollection;
 use App\Http\Resources\JobCollection;
+use App\Http\Resources\JobResource;
 use App\Models\JobSkill;
 use App\Models\Skill;
 use Illuminate\Http\Request;
@@ -23,15 +24,20 @@ class JobController extends Controller
      */
     public function index(Request $request)
     {
+
         $freelancer = Auth::user();
         $filter = new JobFilter();
         $latest = $request->query('latest');
         $byRating = $request->query('byRating');
         $filteredItems = $filter->transform($request);
-        $categories = $freelancer->favoriteCategories->pluck('category_id');
+        $categories = $freelancer->favoriteCategories->pluck('pivot')->pluck('category_id');
+        $jobsQuery = Job::query();
 
         $jobsQuery = Job::whereIn('category_id', $categories)->with('owner')->with('skills');
 
+        if (!isset($jobsQuery)) {
+            $jobsQuery = Job::all();
+        }
         foreach ($filteredItems as $condition) {
             $jobsQuery->where(...$condition);
         }
@@ -51,6 +57,11 @@ class JobController extends Controller
         ]);
     }
 
+    public function index2(){
+        return response()->json([
+            'jobs' => Job::all()
+        ]);
+    }
     // public function index(Request $request)
     // {
     //     $filter= new customerFilter();
@@ -152,6 +163,15 @@ class JobController extends Controller
      */
     public function show(Job $job)
     {
+        try{
+            return response()->json([
+                'job' => new JobResource($job)
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'message'=>$e->getMessage()
+            ]);
+        }
     }
 
     /**
