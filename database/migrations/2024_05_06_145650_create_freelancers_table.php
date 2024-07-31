@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('total_earnings')->nullable();
             $table->dateTime('verified_at')->nullable();
             $table->decimal('rating')->nullable();
+            $table->string('type')->default('freelancer');
             $table->timestamps();
         });
     }

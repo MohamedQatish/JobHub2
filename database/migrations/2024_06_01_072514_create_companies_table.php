@@ -26,6 +26,7 @@ return new class extends Migration
             // $table->string('logo')->nullable();
             $table->decimal('rating')->nullable();
             $table->dateTime('verified_at')->nullable();
+            $table->string('type')->default('company');
             $table->timestamps();
         });
     }
