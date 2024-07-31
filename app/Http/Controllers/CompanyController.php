@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginCompanyRequest;
 use App\Http\Requests\RegisterCompanyRequest;
 use App\Http\Requests\StoreCompanyRequest;
+use App\Http\Resources\CompanyResource;
 use App\Models\Code;
 use App\Models\Company;
 use App\Models\Freelancer;
@@ -135,7 +136,7 @@ class CompanyController extends Controller
             }
             $token = $company->createToken('company')->plainTextToken;
             return response()->json([
-                'company' => $company,
+                'company' => new CompanyResource($company),
                 'token' => $token
             ]);
         } catch (\Exception $e) {
