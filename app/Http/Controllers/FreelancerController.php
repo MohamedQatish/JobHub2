@@ -225,7 +225,7 @@ class FreelancerController extends Controller
             }
             $token = $freelancer->createToken('freelancer')->plainTextToken;
             return response()->json([
-                'freelancer' => $freelancer,
+                'freelancer' => new FreelancerResource($freelancer),
                 'token' => $token
             ]);
         }catch(\Exception $e){

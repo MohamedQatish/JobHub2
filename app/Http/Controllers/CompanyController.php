@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginCompanyRequest;
 use App\Http\Requests\RegisterCompanyRequest;
 use App\Http\Requests\StoreCompanyRequest;
+use App\Http\Resources\CompanyResource;
 use App\Http\Resources\CompanyProfileResource;
 use App\Models\Code;
 use App\Models\Company;
@@ -267,7 +268,7 @@ class CompanyController extends Controller
     // }
     public function show($id)
     {
-        $company = Company::with(['jobs', 'ratingsReceived'])->findOrFail($id);
+        $company = Company::findOrFail($id);
         return new CompanyProfileResource($company);
     }
 }
