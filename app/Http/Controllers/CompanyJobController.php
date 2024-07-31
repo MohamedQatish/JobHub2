@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyJobRequest;
+use App\Http\Resources\CompanyJobResource;
+use App\Models\Company;
 use App\Models\CompanyJob;
 use App\Models\CompanyPostPackage;
 use Exception;
@@ -12,13 +14,16 @@ use Illuminate\Support\Facades\DB;
 
 class CompanyJobController extends Controller
 {
-    public function show($id)
+    public function myJobs($id)
     {
         try {
-            $job = CompanyJob::findOrFail($id);
-            return response()->json(['job' => $job], 200);
-        } catch (Exception $e) {
-            return response()->json(['message' => 'Job not found', 'error' => $e->getMessage()], 404);
+            $company = Company::findOrFail($id);
+            $jobs = $company->jobs()->with('category', 'skills')->get();
+            return response()->json(['jobs' => CompanyJobResource::collection($jobs)], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Company not found', 'error' => $e->getMessage()], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred while fetching the jobs', 'error' => $e->getMessage()], 500);
         }
     }
     public function create(CompanyJobRequest $request)

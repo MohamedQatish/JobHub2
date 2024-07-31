@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginCompanyRequest;
 use App\Http\Requests\RegisterCompanyRequest;
 use App\Http\Requests\StoreCompanyRequest;
+use App\Http\Resources\CompanyProfileResource;
 use App\Models\Code;
 use App\Models\Company;
 use App\Models\Freelancer;
@@ -194,10 +195,11 @@ class CompanyController extends Controller
     }
 
 
-    public function rate(Request $request,$id){
-        try{
+    public function rate(Request $request, $id)
+    {
+        try {
             $request->validate([
-                'rating'=>['required','digits_between:0,5'],
+                'rating' => ['required', 'digits_between:0,5'],
                 'comment' => ['string']
             ]);
 
@@ -223,8 +225,8 @@ class CompanyController extends Controller
 
             DB::beginTransaction();
 
-            $oldRate = $rated->ratingsReceived()->where('rater_id',$user->id);
-            if(isset($oldRate)){
+            $oldRate = $rated->ratingsReceived()->where('rater_id', $user->id);
+            if (isset($oldRate)) {
                 $oldRate->delete();
             }
             $rating = Ratings::create([
@@ -241,13 +243,31 @@ class CompanyController extends Controller
             $rated->update(['rating' => $averageRating]);
             return response()->json([
                 'message' => 'you rated him successfully'
-            ],200);
+            ], 200);
             DB::commit();
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
+    }
+    // public function show(Company $company)
+    // {
+    //     try {
+    //         $company->load('photo', 'jobs.skills', 'ratingsReceived');
+    //         return response()->json([
+    //             'company' => new CompanyProfileResource($company)
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'message' => $e->getMessage()
+    //         ]);
+    //     }
+    // }
+    public function show($id)
+    {
+        $company = Company::with(['jobs', 'ratingsReceived'])->findOrFail($id);
+        return new CompanyProfileResource($company);
     }
 }
