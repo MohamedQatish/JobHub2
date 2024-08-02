@@ -137,7 +137,7 @@ class CompanyController extends Controller
             }
             $token = $company->createToken('company')->plainTextToken;
             return response()->json([
-                'company' => $company,
+                'company' => new CompanyResource($company),
                 'token' => $token
             ]);
         } catch (\Exception $e) {
