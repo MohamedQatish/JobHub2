@@ -7,11 +7,13 @@ use App\Http\Requests\RegisterCompanyRequest;
 use App\Http\Requests\StoreCompanyRequest;
 use App\Http\Resources\CompanyResource;
 use App\Http\Resources\CompanyProfileResource;
+use App\Mail\SendCodeResetPassword;
 use App\Models\Code;
 use App\Models\Company;
 use App\Models\Freelancer;
 use App\Models\freelancerCompaneFollower;
 use App\Models\Ratings;
+use App\Models\ResetCode;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Traits\VerificationTrait;
 use Illuminate\Support\Facades\Log;
 use App\Traits\UploadPhotoTrait;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -99,22 +102,25 @@ class CompanyController extends Controller
             $company = Auth::user();
             $validated = $request->validated();
             DB::beginTransaction();
+
             if ($request->hasFile('photo')) {
                 $photo = $this->uploadPhoto($request, 'photos', "companies");
-                $company->photo()->create([
-                    'name' => $photo
-                ]);
+                if ($company->photo) {
+                    $company->photo()->update([
+                        'name' => $photo
+                    ]);
+                } else {
+                    $company->photo()->create([
+                        'name' => $photo
+                    ]);
+                }
             }
             unset($validated['photo']);
-            // if ($request->hasFile('logo')) {
-            //     $logoName = $request->file('logo')->hashName();
-            //     $request->file('logo')->storeAs('logos', $logoName, 'companies');
-            //     $validated['logo'] = $logoName;
-            // }
+
             $company->update($validated);
             DB::commit();
 
-            return response()->json(['message' => 'Profile created successfully', 'company' => $company]);
+            return response()->json(['message' => 'Profile updated successfully', 'company' => $company]);
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
@@ -123,6 +129,39 @@ class CompanyController extends Controller
         }
     }
 
+    // public function updateProfile(StoreCompanyRequest $request)
+    // {
+    //     try {
+    //         $company = Auth::user();
+    //         $validated = $request->validated();
+    //         DB::beginTransaction();
+
+    //         if ($request->hasFile('photo')) {
+    //             // تحقق مما إذا كان هناك صورة قديمة واحذفها
+    //             if ($company->photo) {
+    //                 Storage::delete('companies/'.$company->photo->name);
+    //                 $company->photo()->delete();
+    //             }
+
+    //             $photo = $this->uploadPhoto($request, 'photos', "companies");
+    //             $company->photo()->create([
+    //                 'name' => $photo
+    //             ]);
+    //         }
+
+    //         unset($validated['photo']);
+
+    //         $company->update($validated);
+    //         DB::commit();
+
+    //         return response()->json(['message' => 'Profile updated successfully', 'company' => $company]);
+    //     } catch (\Throwable $th) {
+    //         DB::rollBack();
+    //         Log::error($th);
+
+    //         return response()->json(['message' => 'An error occurred', 'error' => $th->getMessage()], 500);
+    //     }
+    // }
 
 
     public function login(LoginCompanyRequest $request)
@@ -137,7 +176,7 @@ class CompanyController extends Controller
             }
             $token = $company->createToken('company')->plainTextToken;
             return response()->json([
-                'company' => $company,
+                'company' => new CompanyResource($company),
                 'token' => $token
             ]);
         } catch (\Exception $e) {
@@ -268,7 +307,71 @@ class CompanyController extends Controller
     // }
     public function show($id)
     {
-        $company = Company::findOrFail($id);
+        $company = Company::with(['jobs', 'ratingsReceived'])->findOrFail($id);
         return new CompanyProfileResource($company);
+    }
+
+    //----------- Rest password -------------
+
+    public function forgotpassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email|exists:companies',
+        ]);
+
+        ResetCode::where('email', $request->email)->delete();
+
+        $data['code'] = mt_rand(100000, 999999);
+
+        $codeData = ResetCode::create($data);
+
+        Mail::to($request->email)->send(new SendCodeResetPassword($codeData->code));
+
+        return response(['message' => trans('code.sent')], 200);
+    }
+
+    public function Check(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|exists:reset_codes',
+        ]);
+
+        $passwordReset = ResetCode::firstWhere('code', $request->code);
+
+        if ($passwordReset->created_at > now()->addHour()) {
+            $passwordReset->delete();
+            return response(['message' => trans('passwords.code_is_expire')], 422);
+        }
+
+        return response([
+            'code' => $passwordReset->code,
+            'message' => trans('passwords.code_is_valid')
+        ], 200);
+    }
+
+
+
+
+    public function ResetCodePassword(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|exists:reset_codes',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $passwordReset = ResetCode::firstWhere('code', $request->code);
+
+        if ($passwordReset->created_at > now()->addHour()) {
+            $passwordReset->delete();
+            return response(['message' => trans('passwords.code_is_expire')], 422);
+        }
+
+        $user = Company::firstWhere('email', $passwordReset->email);
+
+        $user->update(['password' => Hash::make($request->input('password'))]);
+
+        $passwordReset->delete();
+
+        return response(['message' => 'password has been successfully reset'], 200);
     }
 }

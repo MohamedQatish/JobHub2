@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\CompanyController;
@@ -28,6 +29,9 @@ Route::prefix('freelancers')->group(function () {
         // Routes that do not require authentication
         Route::post('/register', 'register');
         Route::post('/login', 'login');
+        route::post('forgotpassword','forgotpassword');
+        route::post('Check','Check');
+        route::post('ResetCodePassword','ResetCodePassword');
 
         // Routes that require authentication
         Route::middleware(['auth:sanctum', 'isFreelancer'])->group(function () {
@@ -74,6 +78,9 @@ Route::prefix('freelancers')->group(function () {
 Route::prefix('companies')->group(function () {
     Route::post('/register', [CompanyController::class, 'register']);
     Route::post('/login', [CompanyController::class, 'login']);
+    route::post('forgotpassword',[CompanyController::class,'forgotpassword']);
+    route::post('Check',[CompanyController::class,'Check']);
+    route::post('ResetCodePassword',[CompanyController::class,'ResetCodePassword']);
 
     Route::middleware(['auth:sanctum', 'isFreelancer'])->group(function () {
         Route::post('/follow/{id}', [CompanyController::class, 'follow']);
@@ -85,6 +92,7 @@ Route::prefix('companies')->group(function () {
         Route::post('/logout', [CompanyController::class, 'logout']);
         Route::post('/checkCode', [CompanyController::class, 'checkCode']);
         Route::post('/create-Profile', [CompanyController::class, 'createProfile']);
+        Route::put('/update-Profile', [CompanyController::class, 'updateProfile']);
         Route::get('/{id}',[CompanyController::class,'show']);
         Route::post('rating/{id}', [CompanyRatingController::class, 'store']);
 

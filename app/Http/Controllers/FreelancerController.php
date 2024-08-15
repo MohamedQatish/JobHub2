@@ -12,6 +12,7 @@ use App\Http\Resources\FreelancerProfileResource;
 use App\Http\Resources\FreelancerResource;
 use App\Mail\codeMail;
 use App\Mail\newApplicationMail;
+use App\Mail\SendCodeResetPassword;
 use App\Mail\WelcomeMail;
 use App\Models\Code;
 use App\Models\FreelancerFavoriteCategories;
@@ -24,6 +25,7 @@ use App\Models\CompanyJob;
 use App\Models\JobApplicants;
 use App\Models\Photo;
 use App\Models\Ratings;
+use App\Models\ResetCode;
 use App\Models\Wallet;
 use App\Traits\UploadCvTrait;
 use App\Traits\UploadPhotoTrait;
@@ -40,7 +42,7 @@ use function PHPUnit\Framework\isNull;
 
 class FreelancerController extends Controller
 {
-    use UploadPhotoTrait,UploadCvTrait,VerificationTrait;
+    use UploadPhotoTrait, UploadCvTrait, VerificationTrait;
     /**
      * Display a listing of the resource.
      */
@@ -95,8 +97,9 @@ class FreelancerController extends Controller
     //     }
     // }
 
-    public function register(RegisterFreelancerRequest $request){
-        try{
+    public function register(RegisterFreelancerRequest $request)
+    {
+        try {
             DB::beginTransaction();
             $validated = $request->validated();
             $validated['password'] = Hash::make($validated['password']);
@@ -113,34 +116,35 @@ class FreelancerController extends Controller
                 'freelancer' => $freelancer,
                 'code' => $code,
                 'token' => $token
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function checkCode(Request $request){
-        try{
+    public function checkCode(Request $request)
+    {
+        try {
             DB::beginTransaction();
             $user = Auth::user();
-            if(isset($user->verified_at)){
+            if (isset($user->verified_at)) {
                 return response()->json([
                     'messsage' => 'you are already verified'
                 ]);
             }
             $validated = $request->validate([
-                'code' => ['required','numeric','digits:6','exists:codes,code']
+                'code' => ['required', 'numeric', 'digits:6', 'exists:codes,code']
             ]);
-            $code = Code::where('code',$validated['code'])->where('email',$user->email)->first();
-            if(!isset($code)){
+            $code = Code::where('code', $validated['code'])->where('email', $user->email)->first();
+            if (!isset($code)) {
                 return response()->json([
                     'message' => 'invalid code'
-                ],500);
+                ], 500);
             }
-            if($code->created_at > now()->addHour()){
+            if ($code->created_at > now()->addHour()) {
                 $code->delete();
                 return response()->json([
                     'message' => 'the code is outdated'
@@ -152,33 +156,34 @@ class FreelancerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'your email is verified'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function createProfile(StoreFreelancerRequest $request){
-        try{
+    public function createProfile(StoreFreelancerRequest $request)
+    {
+        try {
             $freelancer = Auth::user();
-            if($freelancer->hourly_wage > 0.1){
+            if ($freelancer->hourly_wage > 0.1) {
                 return response()->json([
                     'message' => 'youve already created your profile'
                 ]);
             }
             $validated = $request->validated();
             DB::beginTransaction();
-            if($request->hasFile('photo')){
-                $photo = $this->uploadPhoto($request,'photos','freelancers');
+            if ($request->hasFile('photo')) {
+                $photo = $this->uploadPhoto($request, 'photos', 'freelancers');
                 $freelancer->photo()->create([
                     'name' => $photo
                 ]);
             }
             unset($validated['photo']);
-            if($request->hasFile('cv')){
-                $cv = $this->uploadCv($request,'cvs');
+            if ($request->hasFile('cv')) {
+                $cv = $this->uploadCv($request, 'cvs');
                 $freelancer->cv()->create([
                     //'freelancer_id' => $freelancer->id,
                     'name' => $cv
@@ -187,7 +192,7 @@ class FreelancerController extends Controller
             unset($validated['cv']);
             $skills = $validated['skills'];
             unset($validated['skills']);
-            foreach($skills as $skill){
+            foreach ($skills as $skill) {
                 FreelancerSkill::create([
                     'freelancer_id' => $freelancer->id,
                     'skill_id' => $skill['skill_id']
@@ -195,7 +200,7 @@ class FreelancerController extends Controller
             }
             $favoriteCategories = $validated['favorite_categories'];
             unset($validated['favorite_categories']);
-            foreach($favoriteCategories as $category){
+            foreach ($favoriteCategories as $category) {
                 FreelancerFavoriteCategories::create([
                     'freelancer_id' => $freelancer->id,
                     'category_id' => $category['category_id']
@@ -205,20 +210,21 @@ class FreelancerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'your profile has been created successfully'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function login(LoginFreelancerRequest $request){
-        try{
+    public function login(LoginFreelancerRequest $request)
+    {
+        try {
             $validated = $request->validated();
-            $freelancer = Freelancer::where('email',$validated['email'])->first();
-            if(!Hash::check($validated['password'],$freelancer->password)){
+            $freelancer = Freelancer::where('email', $validated['email'])->first();
+            if (!Hash::check($validated['password'], $freelancer->password)) {
                 return response()->json([
                     'message' => 'wrong password!'
                 ]);
@@ -228,51 +234,54 @@ class FreelancerController extends Controller
                 'freelancer' => new FreelancerResource($freelancer),
                 'token' => $token
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function logout(Request $request){
-        try{
+    public function logout(Request $request)
+    {
+        try {
             $request->user()->tokens()->delete();
             return response()->json(['message' => 'Successfully logged out']);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function myJobs(){
-        try{
+    public function myJobs()
+    {
+        try {
             // $freelancer = Freelancer::where('id',1)->first();
             $freelancer = Auth::user();
             $jobs = $freelancer->jobs;
             return response()->json([
                 'jobs' => $jobs
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function applyToJob(Job $job){
-        try{
+    public function applyToJob(Job $job)
+    {
+        try {
             $freelancer = Auth::user();
-            if(!$freelancer->jobs->where('id',$job->id)->isEmpty()){
+            if (!$freelancer->jobs->where('id', $job->id)->isEmpty()) {
                 return response()->json([
                     'message' => 'you can\'t apply to your own jobs'
-                ],400);
+                ], 400);
             }
-            if($freelancer->applications->where('job_id',$job->id)->isNotEmpty()){
+            if ($freelancer->applications->where('job_id', $job->id)->isNotEmpty()) {
                 return response()->json([
                     'message' => "you have already applied to this job!"
-                ],400);
+                ], 400);
             }
             DB::beginTransaction();
             // $owner = Freelancer::where('id',$job->owner_id);
@@ -284,47 +293,49 @@ class FreelancerController extends Controller
                 'freelancer_id' => $freelancer->id
             ]);
             DB::commit();
-            Mail::to($job->owner)->send(new newApplicationMail($freelancer,$job));
+            Mail::to($job->owner)->send(new newApplicationMail($freelancer, $job));
             return response()->json([
                 'message' => "you've applied to this job"
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function myApplications(){
-        try{
+    public function myApplications()
+    {
+        try {
             $freelancer = Auth::user();
             $applications = $freelancer->applications;
             $jobs = [];
-            foreach($applications as $application){
-                $jobs[]=[$application->job];
+            foreach ($applications as $application) {
+                $jobs[] = [$application->job];
             }
             return response()->json([
                 'applications' => $jobs
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function addToFavorites(Job $job){
-        try{
+    public function addToFavorites(Job $job)
+    {
+        try {
             $freelancer = Auth::user();
             DB::beginTransaction();
-            $j = $freelancer->favoriteJobs()->where('job_id',$job->id)->first();
-            if(isset($j)){
+            $j = $freelancer->favoriteJobs()->where('job_id', $job->id)->first();
+            if (isset($j)) {
                 $j->delete();
                 DB::commit();
                 return response()->json([
                     'message' => 'you\'ve removed this job from your favorites list'
-                ],200);
+                ], 200);
             }
             // FreelancerFavoriteJobs::create([
             //     'freelancer_id' => $freelancer->id,
@@ -335,29 +346,30 @@ class FreelancerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'you\'ve added this job to your favorite jobs'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function rateFreelancer(Request $request,Freelancer $freelancer){
-        try{
+    public function rateFreelancer(Request $request, Freelancer $freelancer)
+    {
+        try {
             $request->validate([
-                'rating'=>['required','digits_between:0,5']
+                'rating' => ['required', 'digits_between:0,5']
             ]);
             //DB::beginTransaction();
             $user = Auth::user();
-            if($user->id == $freelancer->id){
+            if ($user->id == $freelancer->id) {
                 return response()->json([
                     'message' => 'you cant rate yourself'
                 ]);
             }
-            $oldRate = $freelancer->ratings()->where('user_id',$user->id);
-            if(isset($oldRate)){
+            $oldRate = $freelancer->ratings()->where('user_id', $user->id);
+            if (isset($oldRate)) {
                 $oldRate->delete();
             }
             FreelancerRating::create([
@@ -367,37 +379,37 @@ class FreelancerController extends Controller
             ]);
             $ratings = $freelancer->ratings;
             $rat = 0;
-            foreach($ratings as $rating){
+            foreach ($ratings as $rating) {
                 $rat += $rating['rating'];
             }
             $freelancer->update([
-                'rating' => $rat/count($ratings)
+                'rating' => $rat / count($ratings)
             ]);
             return response()->json([
                 'message' => 'you rated him successfully'
-            ],200);
+            ], 200);
             //DB::commit();
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             //DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
-    public function report(Request $request,$id){
-        try{
+    public function report(Request $request, $id)
+    {
+        try {
             $request->validate([
                 'reason' => 'required'
             ]);
-            if($request->routeIs('report.freelancer')){
+            if ($request->routeIs('report.freelancer')) {
                 $reported = Freelancer::findOrFail($id);
-            }elseif($request->routeIs('report.company')){
+            } elseif ($request->routeIs('report.company')) {
                 $reported = Company::findOrFail($id);
-            }elseif($request->routeIs('report.job')){
+            } elseif ($request->routeIs('report.job')) {
                 $reported = Job::findOrFail($id);
-            }
-            elseif($request->routeIs('report.companyJob')){
+            } elseif ($request->routeIs('report.companyJob')) {
                 $reported = CompanyJob::findOrFail($id);
             }
             $freelancer = Auth::user();
@@ -409,8 +421,8 @@ class FreelancerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'Report submitted successfully'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
@@ -418,10 +430,11 @@ class FreelancerController extends Controller
         }
     }
 
-    public function rate(Request $request,$id){
-        try{
+    public function rate(Request $request, $id)
+    {
+        try {
             $request->validate([
-                'rating'=>['required','between:0,5'],
+                'rating' => ['required', 'between:0,5'],
                 'comment' => ['string']
             ]);
 
@@ -447,15 +460,15 @@ class FreelancerController extends Controller
 
             DB::beginTransaction();
 
-            $oldRate = $rated->ratingsReceived()->where('rater_id',$user->id);
-            if(isset($oldRate)){
+            $oldRate = $rated->ratingsReceived()->where('rater_id', $user->id);
+            if (isset($oldRate)) {
                 $oldRate->delete();
             }
             $rating = new Ratings([
                 'rating' => $request->rating,
                 'comment' => $request->comment
             ]);
-            
+
             $rating->rater()->associate($user);
             $rating->rateable()->associate($rated);
             $rating->save();
@@ -468,12 +481,12 @@ class FreelancerController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'you rated him successfully'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
@@ -487,14 +500,14 @@ class FreelancerController extends Controller
 
     public function index()
     {
-        try{
+        try {
             $freelancers = Freelancer::whereNotNull('verified_at')->get();
             return response()->json([
-                'freelancers'=> new FreelancerCollection($freelancers)
+                'freelancers' => new FreelancerCollection($freelancers)
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
-                'message'=>$e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -505,14 +518,14 @@ class FreelancerController extends Controller
      */
     public function show(Freelancer $freelancer)
     {
-        try{
+        try {
             $freelancer->load('photo', 'cv', 'skills', 'jobs', 'ratingsReceived');
             return response()->json([
                 'freelancer' => new FreelancerProfileResource($freelancer)
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             return response()->json([
-                'message'=>$e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -530,39 +543,39 @@ class FreelancerController extends Controller
      */
     public function update(UpdateFreelancerRequest $request)
     {
-        try{
+        try {
             $freelancer = Auth::user();
             $validated = $request->validated();
             DB::beginTransaction();
-            if($request->hasFile('photo')){
-                $photo = $this->uploadPhoto($request,'photos','freelancers');
+            if ($request->hasFile('photo')) {
+                $photo = $this->uploadPhoto($request, 'photos', 'freelancers');
                 $freelancer->photo()->create([
                     'name' => $photo
                 ]);
                 unset($validated['photo']);
             }
-            if($request->hasFile('cv')){
-                $cv = $this->uploadCv($request,'cvs');
+            if ($request->hasFile('cv')) {
+                $cv = $this->uploadCv($request, 'cvs');
                 $freelancer->cv()->create([
                     //'freelancer_id' => $freelancer->id,
                     'name' => $cv
                 ]);
                 unset($validated['cv']);
             }
-            if($request['skills']){
+            if ($request['skills']) {
                 $skills = $validated['skills'];
                 unset($validated['skills']);
-                foreach($skills as $skill){
+                foreach ($skills as $skill) {
                     FreelancerSkill::create([
                         'freelancer_id' => $freelancer->id,
                         'skill_id' => $skill['skill_id']
                     ]);
                 }
             }
-            if($request['favorite_categories']){
+            if ($request['favorite_categories']) {
                 $favoriteCategories = $validated['favorite_categories'];
                 unset($validated['favorite_categories']);
-                foreach($favoriteCategories as $category){
+                foreach ($favoriteCategories as $category) {
                     FreelancerFavoriteCategories::create([
                         'freelancer_id' => $freelancer->id,
                         'category_id' => $category['category_id']
@@ -574,10 +587,10 @@ class FreelancerController extends Controller
             return response()->json([
                 'message' => 'Your information has been successfully updated.'
             ]);
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message'=>$e->getMessage()
+                'message' => $e->getMessage()
             ]);
         }
     }
@@ -587,15 +600,77 @@ class FreelancerController extends Controller
      */
     public function destroy(Freelancer $freelancer)
     {
-        try{
+        try {
             $freelancer->delete();
             return response()->json([
                 'message' => 'the freelancer has been deleted successfully'
-            ],200);
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'message' => $e->getMessage()
             ]);
         }
+    }
+    //----------- Rest password -------------
+
+    public function forgotpassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email|exists:companies',
+        ]);
+
+        ResetCode::where('email', $request->email)->delete();
+
+        $data['code'] = mt_rand(100000, 999999);
+
+        $codeData = ResetCode::create($data);
+
+        Mail::to($request->email)->send(new SendCodeResetPassword($codeData->code));
+
+        return response(['message' => trans('code.sent')], 200);
+    }
+
+    public function Check(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|exists:reset_codes',
+        ]);
+
+        $passwordReset = ResetCode::firstWhere('code', $request->code);
+
+        if ($passwordReset->created_at > now()->addHour()) {
+            $passwordReset->delete();
+            return response(['message' => trans('passwords.code_is_expire')], 422);
+        }
+
+        return response([
+            'code' => $passwordReset->code,
+            'message' => trans('passwords.code_is_valid')
+        ], 200);
+    }
+
+
+
+    public function ResetCodePassword(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|exists:reset_codes',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $passwordReset = ResetCode::firstWhere('code', $request->code);
+
+        if ($passwordReset->created_at > now()->addHour()) {
+            $passwordReset->delete();
+            return response(['message' => trans('passwords.code_is_expire')], 422);
+        }
+
+        $user = Company::firstWhere('email', $passwordReset->email);
+
+        $user->update(['password' => Hash::make($request->input('password'))]);
+
+        $passwordReset->delete();
+
+        return response(['message' => 'password has been successfully reset'], 200);
     }
 }
