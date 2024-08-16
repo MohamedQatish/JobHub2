@@ -57,6 +57,7 @@ Route::prefix('freelancers')->group(function () {
             Route::post('/store', 'store');
             Route::get('/{job}', 'show');
             Route::get('/{job}/applications', 'jobApplications')->middleware('isOwner');
+            Route::post('/{job}/applications/acceptApplicants','acceptApplicants')->middleware('isOwner');
         });
         Route::controller(FreelancerController::class)->group(function () {
             Route::post('/addToFavorites/{job}', 'addToFavorites');

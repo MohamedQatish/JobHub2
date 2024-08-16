@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Http\Requests\StoreAdminRequest;
 use App\Http\Requests\UpdateAdminRequest;
 use App\Http\Resources\SkillCollection;
+use App\Mail\bannedMail;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Country;
@@ -75,7 +76,7 @@ class AdminController extends Controller
                 'banned_at' => now(),
                 'ban_until' => now()->addDays($request->duration)
             ]);
-            
+            Mail::to($user)->send(new bannedMail($user,$admin,$request->duration,$request->ban_reason));
             DB::commit();
             return response()->json([
                 'message' => 'User banned successfully'

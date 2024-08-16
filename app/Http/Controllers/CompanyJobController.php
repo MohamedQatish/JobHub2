@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyJobRequest;
 use App\Http\Resources\CompanyJobResource;
+use App\Mail\newPostMail;
 use App\Models\Company;
 use App\Models\CompanyJob;
 use App\Models\CompanyPostPackage;
@@ -50,7 +51,12 @@ class CompanyJobController extends Controller
 
             $companyPackage->decrement('remaining_posts');
 
+            $followers = $company->followers;
+            if ($followers->isNotEmpty()) {
+                Mail::to($followers)->send(new NewPostMail($company, $job));
+            }
             DB::commit();
+
             return response()->json(['message' => 'Job created successfully', 'job' => $job], 201);
         } catch (\Exception $e) {
             DB::rollBack();

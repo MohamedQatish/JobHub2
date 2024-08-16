@@ -58,6 +58,10 @@ class Freelancer extends Authenticatable
         return $this->hasMany(Job::class,'owner_id');
     }
 
+    public function works(){
+        return $this->hasMany(Job::class,'worker_id');
+    }
+
     public function ratings(){
         return $this->hasMany(FreelancerRating::class);
     }

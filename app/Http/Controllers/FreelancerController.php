@@ -12,8 +12,10 @@ use App\Http\Resources\FreelancerProfileResource;
 use App\Http\Resources\FreelancerResource;
 use App\Mail\codeMail;
 use App\Mail\newApplicationMail;
+use App\Mail\newReportMail;
 use App\Mail\SendCodeResetPassword;
 use App\Mail\WelcomeMail;
+use App\Models\Admin;
 use App\Models\Code;
 use App\Models\FreelancerFavoriteCategories;
 use App\Models\FreelancerFavoriteJobs;
@@ -418,6 +420,8 @@ class FreelancerController extends Controller
                 'reporter' => $freelancer->id,
                 'report_reason' => $request->reason
             ]);
+            $admins = Admin::all();
+            Mail::to($admins)->send(new newReportMail($freelancer,$reported,$request->reason));
             DB::commit();
             return response()->json([
                 'message' => 'Report submitted successfully'

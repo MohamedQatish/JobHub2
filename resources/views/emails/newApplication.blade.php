@@ -1,3 +1,3 @@
 there is a new Applicants to your job<br>
-{{$job->title}}<br>
-{{$freelancer->name}}
+Job title: {{$job->title}}<br>
+freelancer: {{$freelancer->name}}

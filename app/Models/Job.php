@@ -14,6 +14,9 @@ class Job extends Model
     public function owner(){
         return $this->belongsTo(Freelancer::class);
     }
+    public function worker(){
+        return $this->belongsTo(Freelancer::class,'worker_id');
+    }
     public function category(){
         return $this->belongsTo(Category::class);
     }

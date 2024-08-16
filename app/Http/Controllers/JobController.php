@@ -11,9 +11,12 @@ use App\Http\Resources\JobCollection;
 use App\Http\Resources\JobResource;
 use App\Models\JobSkill;
 use App\Models\Skill;
+use App\Models\Freelancer;
+use App\Mail\acceptedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 use function PHPUnit\Framework\isNull;
 
@@ -152,6 +155,30 @@ class JobController extends Controller
                 new FreelancerCollection($freelancers)
             ], 200);
         } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function acceptApplicants(Job $job,Request $request){
+        try{
+            $validated = $request->validate([
+                'freelancer_id' => ['required','exists:job_applicants,freelancer_id']
+            ]);
+            $user = Auth::user();
+            DB::beginTransaction();
+            $job->update([
+                'worker_id' => $validated['freelancer_id']
+            ]);
+            $freelancer = Freelancer::find($validated['freelancer_id'])->first();
+            DB::commit();
+            Mail::to($freelancer)->send(new acceptedMail($freelancer,$job,$user));
+            return response()->json([
+                'message' => 'successed'  
+            ]);
+        }catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => $e->getMessage()
             ], 500);
