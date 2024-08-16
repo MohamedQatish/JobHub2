@@ -29,9 +29,9 @@ Route::prefix('freelancers')->group(function () {
         // Routes that do not require authentication
         Route::post('/register', 'register');
         Route::post('/login', 'login');
-        route::post('forgotpassword','forgotpassword');
-        route::post('Check','Check');
-        route::post('ResetCodePassword','ResetCodePassword');
+        route::post('forgotpassword', 'forgotpassword');
+        route::post('Check', 'Check');
+        route::post('ResetCodePassword', 'ResetCodePassword');
 
         // Routes that require authentication
         Route::middleware(['auth:sanctum', 'isFreelancer'])->group(function () {
@@ -57,7 +57,7 @@ Route::prefix('freelancers')->group(function () {
             Route::post('/store', 'store');
             Route::get('/{job}', 'show');
             Route::get('/{job}/applications', 'jobApplications')->middleware('isOwner');
-            Route::post('/{job}/applications/acceptApplicants','acceptApplicants')->middleware('isOwner');
+            Route::post('/{job}/applications/acceptApplicants', 'acceptApplicants')->middleware('isOwner');
         });
         Route::controller(FreelancerController::class)->group(function () {
             Route::post('/addToFavorites/{job}', 'addToFavorites');
@@ -79,9 +79,9 @@ Route::prefix('freelancers')->group(function () {
 Route::prefix('companies')->group(function () {
     Route::post('/register', [CompanyController::class, 'register']);
     Route::post('/login', [CompanyController::class, 'login']);
-    route::post('forgotpassword',[CompanyController::class,'forgotpassword']);
-    route::post('Check',[CompanyController::class,'Check']);
-    route::post('ResetCodePassword',[CompanyController::class,'ResetCodePassword']);
+    route::post('forgotpassword', [CompanyController::class, 'forgotpassword']);
+    route::post('Check', [CompanyController::class, 'Check']);
+    route::post('ResetCodePassword', [CompanyController::class, 'ResetCodePassword']);
 
     Route::middleware(['auth:sanctum', 'isFreelancer'])->group(function () {
         Route::post('/follow/{id}', [CompanyController::class, 'follow']);
@@ -94,7 +94,7 @@ Route::prefix('companies')->group(function () {
         Route::post('/checkCode', [CompanyController::class, 'checkCode']);
         Route::post('/create-Profile', [CompanyController::class, 'createProfile']);
         Route::put('/update-Profile', [CompanyController::class, 'updateProfile']);
-        Route::get('/{id}',[CompanyController::class,'show']);
+        Route::get('/{id}', [CompanyController::class, 'show']);
         Route::post('rating/{id}', [CompanyRatingController::class, 'store']);
 
         Route::post('/rate/freelancer/{id}', [CompanyController::class, 'rate'])->name('rate.freelancer2');
@@ -114,13 +114,13 @@ Route::prefix('companies')->group(function () {
 
 
         Route::prefix('/post-packages')->group(function () {
-            Route::get('/', [PostPackageController::class, 'show']);
+            Route::get('/{company}', [PostPackageController::class, 'show']);
             Route::post('/purchase', [PostPackageController::class, 'purchase']);
             Route::get('/{companyId}/total-posts', [PostPackageController::class, 'totalPosts']);
         });
 
         Route::prefix('jobs')->group(function () {
-            Route::get('/{id}', [CompanyJobController::class,'myJobs']);
+            Route::get('/{id}', [CompanyJobController::class, 'myJobs']);
             Route::post('/', [CompanyJobController::class, 'create']);
             Route::put('/{id}', [CompanyJobController::class, 'update']);
             Route::delete('/{id}', [CompanyJobController::class, 'delete']);

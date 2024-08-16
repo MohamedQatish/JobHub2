@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class CompanyJobController extends Controller
 {
@@ -51,7 +52,8 @@ class CompanyJobController extends Controller
 
             $companyPackage->decrement('remaining_posts');
 
-            $followers = $company->followers;
+            $followers = $company->followers()->get();
+
             if ($followers->isNotEmpty()) {
                 Mail::to($followers)->send(new NewPostMail($company, $job));
             }

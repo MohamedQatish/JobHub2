@@ -67,22 +67,25 @@ class Company extends Model
         return $this->morphMany(Ratings::class, 'rateable');
     }
 
-    public function bans(){
-        return $this->morphMany(Ban::class,'bannable');
+    public function bans()
+    {
+        return $this->morphMany(Ban::class, 'bannable');
     }
 
-    public function banned(){
-        return $this->morphOne(Ban::class,'bannable')->latest('banned_at');
+    public function banned()
+    {
+        return $this->morphOne(Ban::class, 'bannable')->latest('banned_at');
     }
 
-    public function reported(){
-        return $this->morphMany(Report::class,'reportable');
+    public function reported()
+    {
+        return $this->morphMany(Report::class, 'reportable');
     }
-    
     public function followers()
     {
-        return $this->belongsToMany(Freelancer::class, 'company_freelancer', 'company_id', 'freelancer_id');
+        return $this->belongsToMany(Freelancer::class, 'freelancer_compane_followers', 'company_id', 'freelancer_id');
     }
+
     public function wallet()
     {
         return $this->morphOne(Wallet::class, 'owner');
